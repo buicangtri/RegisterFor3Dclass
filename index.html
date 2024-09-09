@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ĐĂNG KÝ THAM DỰ BUỔI HƯỚNG DẪN SỬ DỤNG MÁY IN 3D</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #f4f4f4;
+            padding: 10px 0;
+        }
+
+        #banner {
+            width: 100%;
+            height: auto;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .register-section {
+            margin: 20px 0;
+        }
+
+        .table-container {
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 80%;
+            max-width: 800px;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        a {
+            text-decoration: none;
+            color: white;
+            background-color: #4CAF50;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        a:hover {
+            background-color: #45a049;
+        }
+
+        /* Responsive Table */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { 
+                display: block; 
+            }
+
+            th {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                margin: 0 0 1rem 0;
+            }
+
+            td {
+                border: none;
+                position: relative;
+                padding-left: 50%;
+                text-align: left;
+            }
+
+            td:before {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                width: 45%; 
+                padding-right: 10px; 
+                white-space: nowrap;
+                font-weight: bold;
+            }
+
+            /* Labels for each cell */
+            td:nth-of-type(1):before { content: "NGÀY"; }
+            td:nth-of-type(2):before { content: "DANH SÁCH GIÁO VIÊN THAM DỰ"; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <!-- Replace 'your-banner-image.jpg' with the path to your actual image -->
+        <img src="banner.png" alt="Class Banner" id="banner">
+    </header>
+
+    <div class="container">
+        <h1>ĐĂNG KÝ THAM DỰ BUỔI HƯỚNG DẪN SỬ DỤNG MÁY IN 3D</h1>
+
+        <div class="register-section">
+            <p>Thầy cô bấm vào nút "Đăng ký" để lựa chọn ngày tham dự</p>
+            <!-- Replace 'your-google-form-link' with your actual Google Form link -->
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSc2NrHbVqcclirg5Pd6RiaSf4gKW3yqwYJTfEYkN3UMf8PG2Q/viewform?usp=sf_link" target="_blank">Đăng ký</a>
+        </div>
+
+        <div class="table-container">
+            <h2>Tổng hợp danh sách thầy cô đã đăng ký</h2>
+            <table id="registration-table">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Danh sách thầy cô đã đăng ký</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamic rows will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your actual published Google Sheets CSV URL
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7XuwTDD8jOCOfjAN2rlw9xnl8M6SsHYO3-dPmeY_5R5zeAVmDqYQMDWOhrGrBFrUwWMnqxdWCJc6c/pub?output=csv';
+
+        // Function to fetch and parse CSV data
+        async function fetchCSV(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.text();
+                return parseCSV(data);
+            } catch (error) {
+                console.error('Error fetching CSV data:', error);
+                return [];
+            }
+        }
+
+        // Simple CSV parser
+        function parseCSV(data) {
+            const lines = data.trim().split('\n');
+            const headers = lines[0].split(',');
+            const entries = lines.slice(1).map(line => {
+                const values = line.split(',');
+                let entry = {};
+                headers.forEach((header, index) => {
+                    entry[header.trim()] = values[index].trim();
+                });
+                return entry;
+            });
+            return entries;
+        }
+
+        // Function to populate the table
+        async function populateTable() {
+            const registrations = await fetchCSV(csvUrl);
+
+            // Assuming your Google Form has fields like "Name" and "Day"
+            // Adjust the field names based on your actual Google Form fields
+            const nameField = 'HỌ VÀ TÊN GIÁO VIÊN'; // Change to your actual name field
+            const dayField = 'Ngày đăng ký tham dự (thầy cô chọn 1 ngày để tham dự)';   // Change to your actual day field
+
+            // Create a map of days to registered names
+            const dayMap = {};
+
+            registrations.forEach(reg => {
+                const name = reg[nameField];
+                const day = reg[dayField];
+                if (day && name) {
+                    if (!dayMap[day]) {
+                        dayMap[day] = [];
+                    }
+                    dayMap[day].push(name);
+                }
+            });
+
+            // Get the table body
+            const tableBody = document.querySelector('#registration-table tbody');
+
+            // Clear any existing rows
+            tableBody.innerHTML = '';
+
+            // Populate the table
+            for (const [day, names] of Object.entries(dayMap)) {
+                const row = document.createElement('tr');
+
+                const dayCell = document.createElement('td');
+                dayCell.textContent = day;
+                row.appendChild(dayCell);
+
+                const namesCell = document.createElement('td');
+                namesCell.textContent = names.join(', ');
+                row.appendChild(namesCell);
+
+                tableBody.appendChild(row);
+            }
+
+            // If no registrations found
+            if (registrations.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 2;
+                cell.textContent = 'Chưa có giáo viên đăng ký';
+                row.appendChild(cell);
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Initialize the table on page load
+        window.onload = populateTable;
+    </script>
+
+</body>
+</html>
